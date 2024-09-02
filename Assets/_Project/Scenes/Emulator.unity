@@ -500,7 +500,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Material: {fileID: 2100000, guid: 6d04b66f5b76a564f9a4db45abac5f3e, type: 2}
-  ScreenBytesFilename: TreasureIslandDizzyBytesExtension
+  ScreenBytesFilename: SlapFight
 --- !u!4 &1739776917
 Transform:
   m_ObjectHideFlags: 0

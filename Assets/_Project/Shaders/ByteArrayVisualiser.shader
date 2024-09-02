@@ -225,6 +225,17 @@ Shader "ByteArrayVisualiser"
                 191,
             };
 
+            static const fixed3 kAttributeColors[8] =
+            {
+                { 0, 0, 0 }, // 0 black
+                { 0, 0, 1 }, // 1 blue
+                { 1, 0, 0 }, // 2 red
+                { 1, 0, 1 }, // 3 magenta
+                { 0, 1, 0 }, // 4 green
+                { 0, 1, 1 }, // 5 cyan
+                { 1, 1, 0 }, // 6 yellow
+                { 1, 1, 1 }, // 7 white
+            };
 
             static const int kScreenWidthPixels = 256;
             static const int kScreenHeightPixels = 192;
@@ -253,6 +264,20 @@ Shader "ByteArrayVisualiser"
 
             // Declare the compute buffer
             StructuredBuffer<uint> _ByteBuffer;
+
+            uint GetAttributeByte(v2f i)
+            {
+                float2 characterCoord = i.uv * float2(kScreenWidthCharacters, kScreenHeightCharacters);
+
+                uint characterX = floor(characterCoord.x);
+                uint characterY = kScreenHeightCharacters - 1 - floor(characterCoord.y);
+
+                uint byteIndex = (characterY * kScreenWidthCharacters) + characterX;
+
+                uint byteValue = _ByteBuffer[kScreenPixelDataLength + byteIndex];
+
+                return byteValue;
+            }
 
             bool IsBitSet(v2f i)
             {
@@ -297,9 +322,26 @@ Shader "ByteArrayVisualiser"
 
 
                 // TODO calculate the Ink and Paper and Bright and Flash values
+                // atrib format:
+                // 7  6  5  4  3  2  1  0
+                // F  B  P2 P1 P0 I2 I1 I0
 
 
-                fixed4 col = isBitSet ? fixed4(0, 0, 0, 1) : fixed4(1, 1, 1, 1);
+                uint attributeByte = GetAttributeByte(i);
+                uint inkValue = attributeByte & 7;
+                uint paperValue = (attributeByte >> 3) & 7;
+                uint brightValue = (attributeByte >> 6) & 1;
+
+                fixed4 inkColor = fixed4(kAttributeColors[inkValue], 1);
+                fixed4 paperColor = fixed4(kAttributeColors[paperValue], 1);
+
+                if (!brightValue)
+                {
+                    inkColor *= 0.8;
+                    paperColor *= 0.8;
+                }
+
+                fixed4 col = isBitSet ? inkColor : paperColor;
 
                 return col;
             }
