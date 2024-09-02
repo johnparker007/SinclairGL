@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class ByteArrayShaderController : MonoBehaviour
 {
+    // screen
     public const int kScreenWidthPixels = 256;
     public const int kScreenHeightPixels = 192;
 
@@ -11,13 +12,28 @@ public class ByteArrayShaderController : MonoBehaviour
 
     public const int kScreenPixelDataLength = kScreenWidthCharacters * kScreenHeightPixels;
 
+    public const int kScreenAttributeDataLength = kScreenWidthCharacters * kScreenHeightCharacters;
+
+    public const int kScreenTotalDataLength = kScreenPixelDataLength + kScreenAttributeDataLength;
+
+    // memory
+    public const int kMemoryRomLength = 16384;
+    public const int kMemoryRamLength = 49152;
+    public const int kMemoryTotalLength = kMemoryRomLength + kMemoryRamLength;
+
+    public const int kMemoryScreenPixelsStart = kMemoryRomLength;
+    public const int kMemoryScreenAttributesStart = kMemoryScreenPixelsStart + kScreenPixelDataLength;
+
+
+
+
 
 
     public Material Material;
     public string ScreenBytesFilename;
 
     private ComputeBuffer _byteBuffer = null;
-    private int _bufferSize = kScreenPixelDataLength; 
+    private int _bufferSize = kScreenTotalDataLength; 
 
     private void Start()
     {
@@ -48,13 +64,13 @@ public class ByteArrayShaderController : MonoBehaviour
             return;
         }
 
-        uint[] screenPixelData = new uint[kScreenPixelDataLength];
-        for(int byteIndex = 0; byteIndex < kScreenPixelDataLength; ++byteIndex)
+        uint[] screenData = new uint[kScreenTotalDataLength];
+        for(int byteIndex = 0; byteIndex < kScreenTotalDataLength; ++byteIndex)
         {
-            screenPixelData[byteIndex] = fileData[byteIndex];
+            screenData[byteIndex] = fileData[byteIndex];
         }
 
-        _byteBuffer.SetData(screenPixelData);
+        _byteBuffer.SetData(screenData);
 
         // Set the buffer to the shader
         Material.SetBuffer("_ByteBuffer", _byteBuffer);

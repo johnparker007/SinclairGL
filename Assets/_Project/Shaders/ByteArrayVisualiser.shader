@@ -29,15 +29,6 @@ Shader "ByteArrayVisualiser"
                 float4 vertex : SV_POSITION;
             };
 
-
-            static const int kScreenWidthPixels = 256;
-            static const int kScreenHeightPixels = 192;
-
-            static const int kScreenWidthCharacters = kScreenWidthPixels / 8;
-            static const int kScreenHeightCharacters = kScreenHeightPixels / 8;
-
-            static const int kScreenPixelDataLength = kScreenWidthCharacters * kScreenHeightPixels;
-
             static const uint kScreenYLookup[] =
             {
                 0,
@@ -235,12 +226,62 @@ Shader "ByteArrayVisualiser"
             };
 
 
+            static const int kScreenWidthPixels = 256;
+            static const int kScreenHeightPixels = 192;
+
+            static const int kScreenWidthCharacters = kScreenWidthPixels / 8;
+            static const int kScreenHeightCharacters = kScreenHeightPixels / 8;
+
+            static const int kScreenPixelDataLength = kScreenWidthCharacters * kScreenHeightPixels;
+
+            static const int kScreenAttributeDataLength = kScreenWidthCharacters * kScreenHeightCharacters;
+
+            static const int kScreenTotalDataLength = kScreenPixelDataLength + kScreenAttributeDataLength;
+
+            // memory
+            static const int kMemoryRomLength = 16384;
+            static const int kMemoryRamLength = 49152;
+            static const int kMemoryTotalLength = kMemoryRomLength + kMemoryRamLength;
+
+            static const int kMemoryScreenPixelsStart = kMemoryRomLength;
+            static const int kMemoryScreenAttributesStart = kMemoryScreenPixelsStart + kScreenPixelDataLength;
+
+
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
 
             // Declare the compute buffer
             StructuredBuffer<uint> _ByteBuffer;
+
+            bool IsBitSet(v2f i)
+            {
+                // Calculate the byte and bit index based on UV coordinates
+                float2 pixelCoord = i.uv * float2(kScreenWidthPixels, kScreenHeightPixels);
+
+                uint screenX = floor(pixelCoord.x);
+                uint screenYRaw = kScreenHeightPixels - 1 - floor(pixelCoord.y);
+                uint screenYDecoded = kScreenYLookup[screenYRaw];
+
+                uint byteIndex = (screenYDecoded * kScreenWidthCharacters) + (screenX / 8);
+
+                uint bitIndex = 7 - (screenX % 8);
+
+                // Default color (can be used for areas outside the byte array)
+                fixed4 col = fixed4(0.5, 0.5, 0.5, 1); // Gray
+
+                // Ensure we're within the array bounds
+                if (byteIndex < kScreenPixelDataLength)
+                {
+                    // Check if the current bit is set
+                    uint byteValue = _ByteBuffer[byteIndex];
+                    bool isBitSet = (byteValue & (1 << bitIndex)) != 0;
+                    
+                    return isBitSet;
+                }
+
+                return false;
+            }
 
             v2f vert(appdata v)
             {
@@ -252,31 +293,13 @@ Shader "ByteArrayVisualiser"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                // Calculate the byte and bit index based on UV coordinates
-                float2 pixelCoord = i.uv * float2(kScreenWidthPixels, kScreenHeightPixels);
-
-                uint screenX = floor(pixelCoord.x);
-                uint screenYRaw = 191 - floor(pixelCoord.y);
-                uint screenYDecoded = kScreenYLookup[screenYRaw];
-
-                uint byteIndex = (screenYDecoded * kScreenWidthCharacters) + (screenX / 8);
-
-                uint bitIndex = 7 - (screenX % 8);
+                bool isBitSet = IsBitSet(i);
 
 
-                // Default color (can be used for areas outside the byte array)
-                fixed4 col = fixed4(0.5, 0.5, 0.5, 1); // Gray
+                // TODO calculate the Ink and Paper and Bright and Flash values
 
-                // Ensure we're within the array bounds
-                if (byteIndex < kScreenPixelDataLength)
-                {
-                    // Check if the current bit is set
-                    uint byteValue = _ByteBuffer[byteIndex];
-                    bool isBitSet = (byteValue & (1 << bitIndex)) != 0;
 
-                    // Set the output color (black for 1, white for 0)
-                    col = isBitSet ? fixed4(0, 0, 0, 1) : fixed4(1, 1, 1, 1);
-                }
+                fixed4 col = isBitSet ? fixed4(0, 0, 0, 1) : fixed4(1, 1, 1, 1);
 
                 return col;
             }
