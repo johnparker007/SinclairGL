@@ -320,13 +320,6 @@ Shader "ByteArrayVisualiser"
             {
                 bool isBitSet = IsBitSet(i);
 
-
-                // TODO calculate the Ink and Paper and Bright and Flash values
-                // atrib format:
-                // 7  6  5  4  3  2  1  0
-                // F  B  P2 P1 P0 I2 I1 I0
-
-
                 uint attributeByte = GetAttributeByte(i);
                 uint inkValue = attributeByte & 7;
                 uint paperValue = (attributeByte >> 3) & 7;
