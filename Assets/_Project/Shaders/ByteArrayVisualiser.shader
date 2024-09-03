@@ -331,6 +331,7 @@ Shader "ByteArrayVisualiser"
                 uint inkValue = attributeByte & 7;
                 uint paperValue = (attributeByte >> 3) & 7;
                 uint brightValue = (attributeByte >> 6) & 1;
+                uint flashValue = (attributeByte >> 7) & 1;
 
                 fixed4 inkColor = fixed4(kAttributeColors[inkValue], 1);
                 fixed4 paperColor = fixed4(kAttributeColors[paperValue], 1);
@@ -339,6 +340,18 @@ Shader "ByteArrayVisualiser"
                 {
                     inkColor *= 0.8;
                     paperColor *= 0.8;
+                }
+
+                // seems a little out, but calced from:
+                //   The Spectrum's 'FLASH' effect is also produced by the ULA: Every 16 frames, the 
+                //   ink and paper of all flashing bytes is swapped; ie a normal to inverted to normal 
+                //   cycle takes 32 frames, which is (good as) 0.64 seconds.
+                uint timeInt = floor(_Time.y * 3.125);
+                if (flashValue && timeInt % 2 == 0)
+                {
+                    fixed4 tempInkColor = inkColor;
+                    inkColor = paperColor;
+                    paperColor = tempInkColor;
                 }
 
                 fixed4 col = isBitSet ? inkColor : paperColor;
