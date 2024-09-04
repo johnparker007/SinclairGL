@@ -265,6 +265,24 @@ Shader "ByteArrayVisualiser"
             // Declare the compute buffer
             StructuredBuffer<uint> _ByteBuffer;
 
+
+            uint ReadMemoryByte(int address)
+            {
+                // Determine which uint contains the byte and the byte's position within that uint
+                uint targetIndex = address / 4;
+                uint byteOffset = address % 4;
+
+                // Extract the byte from the corresponding position
+                uint targetValue = _ByteBuffer[targetIndex];
+
+                // Shift the bytes in the uint so the desired byte is in the lowest position
+                uint shiftAmount = byteOffset * 8; // 8 bits per byte
+                uint result = ((targetValue >> shiftAmount) & 0xFF);
+
+                return result;
+            }
+
+
             uint GetAttributeByte(v2f i)
             {
                 float2 characterCoord = i.uv * float2(kScreenWidthCharacters, kScreenHeightCharacters);
@@ -274,7 +292,7 @@ Shader "ByteArrayVisualiser"
 
                 uint byteIndex = (characterY * kScreenWidthCharacters) + characterX;
 
-                uint byteValue = _ByteBuffer[kScreenPixelDataLength + byteIndex];
+                uint byteValue = ReadMemoryByte(kMemoryScreenAttributesStart + byteIndex);
 
                 return byteValue;
             }
@@ -299,7 +317,8 @@ Shader "ByteArrayVisualiser"
                 if (byteIndex < kScreenPixelDataLength)
                 {
                     // Check if the current bit is set
-                    uint byteValue = _ByteBuffer[byteIndex];
+                    uint byteValue = ReadMemoryByte(kMemoryScreenPixelsStart + byteIndex);
+
                     bool isBitSet = (byteValue & (1 << bitIndex)) != 0;
                     
                     return isBitSet;
@@ -335,7 +354,7 @@ Shader "ByteArrayVisualiser"
                     paperColor *= 0.8;
                 }
 
-                // seems a little out, but calced from:
+                // seems very slightly out (compared to Spectaculator), but calced from:
                 //   The Spectrum's 'FLASH' effect is also produced by the ULA: Every 16 frames, the 
                 //   ink and paper of all flashing bytes is swapped; ie a normal to inverted to normal 
                 //   cycle takes 32 frames, which is (good as) 0.64 seconds.

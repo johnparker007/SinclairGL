@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using UnityEngine;
 
@@ -33,7 +34,7 @@ public class ByteArrayShaderController : MonoBehaviour
     public string ScreenBytesFilename;
 
     private ComputeBuffer _byteBuffer = null;
-    private int _bufferSize = kScreenTotalDataLength; 
+    private int _bufferSize = kMemoryTotalLength / 4; 
 
     private void Start()
     {
@@ -64,13 +65,11 @@ public class ByteArrayShaderController : MonoBehaviour
             return;
         }
 
-        uint[] screenData = new uint[kScreenTotalDataLength];
-        for(int byteIndex = 0; byteIndex < kScreenTotalDataLength; ++byteIndex)
-        {
-            screenData[byteIndex] = fileData[byteIndex];
-        }
+        uint[] memoryData = new uint[kMemoryTotalLength / 4];
 
-        _byteBuffer.SetData(screenData);
+        WriteBytesToUIntArray(fileData, memoryData, kMemoryScreenPixelsStart);
+
+        _byteBuffer.SetData(memoryData);
 
         // Set the buffer to the shader
         Material.SetBuffer("_ByteBuffer", _byteBuffer);
@@ -118,6 +117,36 @@ public class ByteArrayShaderController : MonoBehaviour
         {
             Debug.LogError("Could not find file at path: " + filePath);
             return null;
+        }
+    }
+
+    public static void WriteBytesToUIntArray(byte[] source, uint[] target, int offset)
+    {
+        if (source == null) throw new ArgumentNullException(nameof(source));
+        if (target == null) throw new ArgumentNullException(nameof(target));
+        if (offset < 0 || offset >= target.Length * 4) throw new ArgumentOutOfRangeException(nameof(offset), "Offset is out of range");
+
+        int byteIndex = 0;
+        int targetIndex = offset / 4;
+        int byteOffset = offset % 4;
+
+        while (byteIndex < source.Length && targetIndex < target.Length)
+        {
+            // Get current uint and split it into bytes
+            byte[] currentUintBytes = BitConverter.GetBytes(target[targetIndex]);
+
+            // Replace the necessary bytes starting from byteOffset
+            for (int i = byteOffset; i < 4 && byteIndex < source.Length; i++, byteIndex++)
+            {
+                currentUintBytes[i] = source[byteIndex];
+            }
+
+            // Combine bytes back to uint and store it in the target array
+            target[targetIndex] = BitConverter.ToUInt32(currentUintBytes, 0);
+
+            // Move to the next uint in the target array
+            targetIndex++;
+            byteOffset = 0;  // Reset byteOffset since we are now starting at the beginning of the next uint
         }
     }
 }
