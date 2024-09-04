@@ -26,12 +26,18 @@ public class ByteArrayShaderController : MonoBehaviour
     public const int kMemoryScreenAttributesStart = kMemoryScreenPixelsStart + kScreenPixelDataLength;
 
 
-
+    public enum EmulationModeType
+    {
+        PortedCSharp,
+        RefactoredCSharp,
+        Shader
+    }
 
 
 
     public Material Material;
     public string ScreenBytesFilename;
+    public EmulationModeType EmulationMode;
 
     private ComputeBuffer _byteBuffer = null;
     private int _bufferSize = kMemoryTotalLength / 4; 
