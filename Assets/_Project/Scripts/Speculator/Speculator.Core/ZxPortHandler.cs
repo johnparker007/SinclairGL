@@ -10,6 +10,7 @@
 // THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND.
 
 using CSharp.Core.Extensions;
+using Speculator.Core.Tape;
 //using CSharp.Core.ViewModels;
 //using SharpHook;
 //using SharpHook.Native;
@@ -25,94 +26,95 @@ namespace Speculator.Core
 //    public class ZxPortHandler : ViewModelBase, IPortHandler, IDisposable
     public class ZxPortHandler : /*ViewModelBase,*/ IPortHandler/*, IDisposable*/
     {
-        //private readonly SoundHandler m_soundHandler;
-        //private readonly ZxDisplay m_theDisplay;
-        //private readonly TapeLoader m_tapeLoader;
+        private readonly SoundHandler m_soundHandler;
+        private readonly ZxDisplay m_theDisplay;
+        private readonly TapeLoader m_tapeLoader;
         //private readonly List<KeyCode> m_realKeysPressed = new List<KeyCode>();
         //private readonly List<(KeyCode[] Pc, KeyCode[] Speccy)> m_pcToSpectrumKeyMap;
         //private readonly List<(KeyCode[] Pc, KeyCode[] Speccy)> m_pcToSpectrumKeyMapWithJoystick;
         //private readonly SimpleGlobalHook m_keyboardHook;
-        //private bool m_emulateCursorJoystick;
-        //private bool m_handleKeyEvents = true;
-        //private bool? m_tapeSignal;
+        private bool m_emulateCursorJoystick;
+        private bool m_handleKeyEvents = true;
+        private bool? m_tapeSignal;
 
-        ///// <summary>
-        ///// The keyboard hooks work regardless of whether the app has focus.
-        ///// This flag ensures we ignore events we don't want.
-        ///// </summary>
-        //private bool HandleKeyEvents
-        //{
-        //    get => m_handleKeyEvents;
-        //    set
-        //    {
-        //        if (m_handleKeyEvents == value)
-        //            return;
-        //        m_handleKeyEvents = value;
+        /// <summary>
+        /// The keyboard hooks work regardless of whether the app has focus.
+        /// This flag ensures we ignore events we don't want.
+        /// </summary>
+        private bool HandleKeyEvents
+        {
+            get => m_handleKeyEvents;
+            set
+            {
+                if (m_handleKeyEvents == value)
+                    return;
+                m_handleKeyEvents = value;
 
-        //        lock (m_realKeysPressed)
-        //            m_realKeysPressed.Clear();
-        //    }
-        //}
+                //lock (m_realKeysPressed)
+                //    m_realKeysPressed.Clear();
+            }
+        }
 
-        ///// <summary>
-        ///// Whether cursor or Kempston joystick is enabled.
-        ///// </summary>
-        //public bool EmulateCursorJoystick
-        //{
-        //    get => m_emulateCursorJoystick;
-        //    set => SetField(ref m_emulateCursorJoystick, value);
-        //}
+        /// <summary>
+        /// Whether cursor or Kempston joystick is enabled.
+        /// </summary>
+        public bool EmulateCursorJoystick
+        {
+            get => m_emulateCursorJoystick;
+            //set => SetField(ref m_emulateCursorJoystick, value);
+            set => m_emulateCursorJoystick = value;
+        }
 
-        //public ZxPortHandler(SoundHandler soundHandler, ZxDisplay theDisplay, TapeLoader tapeLoader)
-        //{
-        //    m_soundHandler = soundHandler;
-        //    m_theDisplay = theDisplay;
-        //    m_tapeLoader = tapeLoader;
+        public ZxPortHandler(SoundHandler soundHandler, ZxDisplay theDisplay, TapeLoader tapeLoader)
+        {
+            m_soundHandler = soundHandler;
+            m_theDisplay = theDisplay;
+            m_tapeLoader = tapeLoader;
 
-        //    // Map PC key to a sequence of emulated Speccy keys.
-        //    m_pcToSpectrumKeyMap = new List<(KeyCode[], KeyCode[])>();
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcBackspace), K(KeyCode.VcLeftShift, KeyCode.Vc0)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcComma), K(KeyCode.VcRightShift, KeyCode.VcN)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcComma, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcR)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcPeriod), K(KeyCode.VcRightShift, KeyCode.VcM)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcPeriod, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcT)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcEquals), K(KeyCode.VcRightShift, KeyCode.VcL)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcEquals, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcK)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcMinus), K(KeyCode.VcRightShift, KeyCode.VcJ)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcMinus, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.Vc0)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcSlash), K(KeyCode.VcRightShift, KeyCode.VcV)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcSlash, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcC)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcQuote), K(KeyCode.VcRightShift, KeyCode.Vc7)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcQuote, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcP)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcSemicolon), K(KeyCode.VcRightShift, KeyCode.VcO)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcSemicolon, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcZ)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.VcLeftAlt), K(KeyCode.VcLeftShift, KeyCode.VcRightShift))); // Note: Left shift will act like CAPS SHIFT to allow access to the Speccy'))s
-        //    // special keys (cursors, GRAPHICS, etc).
-        //    // Right-shift maps PC keys to Speccy equivalent. (E.g. Round brackets)
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.Vc7, KeyCode.VcRightShift), K(KeyCode.VcRightShift, KeyCode.Vc6)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.Vc8, KeyCode.VcRightShift), K(KeyCode.VcRightShift, KeyCode.VcB)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.Vc9, KeyCode.VcRightShift), K(KeyCode.VcRightShift, KeyCode.Vc8)));
-        //    m_pcToSpectrumKeyMap.Add((K(KeyCode.Vc0, KeyCode.VcRightShift), K(KeyCode.VcRightShift, KeyCode.Vc9)));
+            //// Map PC key to a sequence of emulated Speccy keys.
+            //m_pcToSpectrumKeyMap = new List<(KeyCode[], KeyCode[])>();
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcBackspace), K(KeyCode.VcLeftShift, KeyCode.Vc0)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcComma), K(KeyCode.VcRightShift, KeyCode.VcN)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcComma, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcR)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcPeriod), K(KeyCode.VcRightShift, KeyCode.VcM)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcPeriod, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcT)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcEquals), K(KeyCode.VcRightShift, KeyCode.VcL)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcEquals, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcK)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcMinus), K(KeyCode.VcRightShift, KeyCode.VcJ)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcMinus, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.Vc0)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcSlash), K(KeyCode.VcRightShift, KeyCode.VcV)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcSlash, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcC)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcQuote), K(KeyCode.VcRightShift, KeyCode.Vc7)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcQuote, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcP)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcSemicolon), K(KeyCode.VcRightShift, KeyCode.VcO)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcSemicolon, KeyCode.VcLeftShift), K(KeyCode.VcRightShift, KeyCode.VcZ)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.VcLeftAlt), K(KeyCode.VcLeftShift, KeyCode.VcRightShift))); // Note: Left shift will act like CAPS SHIFT to allow access to the Speccy'))s
+            //// special keys (cursors, GRAPHICS, etc).
+            //// Right-shift maps PC keys to Speccy equivalent. (E.g. Round brackets)
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.Vc7, KeyCode.VcRightShift), K(KeyCode.VcRightShift, KeyCode.Vc6)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.Vc8, KeyCode.VcRightShift), K(KeyCode.VcRightShift, KeyCode.VcB)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.Vc9, KeyCode.VcRightShift), K(KeyCode.VcRightShift, KeyCode.Vc8)));
+            //m_pcToSpectrumKeyMap.Add((K(KeyCode.Vc0, KeyCode.VcRightShift), K(KeyCode.VcRightShift, KeyCode.Vc9)));
 
-        //    // Make right-shift mirror left shift.
-        //    m_pcToSpectrumKeyMap
-        //        .Where(o => o.Pc.Length == 2 && o.Pc[1] == KeyCode.VcLeftShift)
-        //        .ToList()
-        //        .ForEach(o => m_pcToSpectrumKeyMap.Add((K(o.Pc[0], KeyCode.VcRightShift), o.Speccy)));
+            //// Make right-shift mirror left shift.
+            //m_pcToSpectrumKeyMap
+            //    .Where(o => o.Pc.Length == 2 && o.Pc[1] == KeyCode.VcLeftShift)
+            //    .ToList()
+            //    .ForEach(o => m_pcToSpectrumKeyMap.Add((K(o.Pc[0], KeyCode.VcRightShift), o.Speccy)));
 
-        //    // Make extended key map for Cursor Joystick support.
-        //    m_pcToSpectrumKeyMapWithJoystick = m_pcToSpectrumKeyMap.ToList();
-        //    m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcUp), K(KeyCode.Vc7)));
-        //    m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcDown), K(KeyCode.Vc6)));
-        //    m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcLeft), K(KeyCode.Vc5)));
-        //    m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcRight), K(KeyCode.Vc8)));
-        //    m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcBackQuote), K(KeyCode.Vc0)));
-        //    m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcBackslash), K(KeyCode.Vc0)));
+            //// Make extended key map for Cursor Joystick support.
+            //m_pcToSpectrumKeyMapWithJoystick = m_pcToSpectrumKeyMap.ToList();
+            //m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcUp), K(KeyCode.Vc7)));
+            //m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcDown), K(KeyCode.Vc6)));
+            //m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcLeft), K(KeyCode.Vc5)));
+            //m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcRight), K(KeyCode.Vc8)));
+            //m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcBackQuote), K(KeyCode.Vc0)));
+            //m_pcToSpectrumKeyMapWithJoystick.Add((K(KeyCode.VcBackslash), K(KeyCode.Vc0)));
 
-        //    m_keyboardHook = new SimpleGlobalHook();
-        //    m_keyboardHook.KeyPressed += (_, args) => SetKeyDown(args.Data.KeyCode);
-        //    m_keyboardHook.KeyReleased += (_, args) => SetKeyUp(args.Data.KeyCode);
-        //}
+            //m_keyboardHook = new SimpleGlobalHook();
+            //m_keyboardHook.KeyPressed += (_, args) => SetKeyDown(args.Data.KeyCode);
+            //m_keyboardHook.KeyReleased += (_, args) => SetKeyUp(args.Data.KeyCode);
+        }
 
         //public void StartKeyboardHook() => m_keyboardHook.RunAsync();
 
@@ -337,7 +339,8 @@ namespace Speculator.Core
         //    }
         //}
 
-        //public void Dispose() =>
+        public void Dispose() =>
+            Console.WriteLine("JP COMMENTED OUT");
         //    m_keyboardHook?.Dispose();
 
         //public IDisposable CreateKeyBlocker() => new KeyBlocker(this);
