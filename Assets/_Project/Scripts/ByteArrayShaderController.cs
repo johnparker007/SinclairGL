@@ -39,6 +39,8 @@ public class ByteArrayShaderController : MonoBehaviour
     public string ScreenBytesFilename;
     public EmulationModeType EmulationMode;
 
+    public EmulatorController EmulatorController;
+
     private ComputeBuffer _byteBuffer = null;
     private int _bufferSize = kMemoryTotalLength / 4; 
 
@@ -79,6 +81,19 @@ public class ByteArrayShaderController : MonoBehaviour
 
         // Set the buffer to the shader
         Material.SetBuffer("_ByteBuffer", _byteBuffer);
+    }
+
+    private void Update()
+    {
+        // TODO don't new this each time
+        uint[] memoryData = new uint[kMemoryTotalLength / 4];
+            
+        WriteBytesToUIntArray(
+            EmulatorController.ZxSpectrum.TheCpu.MainMemory.Data,
+            memoryData, 
+            0);
+
+        _byteBuffer.SetData(memoryData);
     }
 
     private void OnDestroy()

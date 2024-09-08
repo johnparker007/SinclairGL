@@ -1,0 +1,2 @@
+[08/09/2024 15:08:25] Info: Loading ROM 'C:\projects\GitRepos\SinclairGL\Assets\_Project\Resources\ROMs\Standard Spectrum 48K BASIC.rom'.
+[08/09/2024 15:08:25] Info: ROM size: 16384 bytes.
